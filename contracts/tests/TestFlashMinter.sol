@@ -4,9 +4,13 @@ pragma solidity 0.7.6;
 import "../interfaces/IWETH10.sol";
 import "../interfaces/IERC3156FlashBorrower.sol";
 
-
 contract TestFlashLender is IERC3156FlashBorrower {
-    enum Action {NORMAL, STEAL, WITHDRAW, REENTER}
+    enum Action {
+        NORMAL,
+        STEAL,
+        WITHDRAW,
+        REENTER
+    }
 
     uint256 public flashBalance;
     address public flashToken;
@@ -15,9 +19,15 @@ contract TestFlashLender is IERC3156FlashBorrower {
 
     receive() external payable {}
 
-    function onFlashLoan(address sender, address token, uint256 value, uint256, bytes calldata data) external override returns(bytes32) {
+    function onFlashLoan(
+        address sender,
+        address token,
+        uint256 value,
+        uint256,
+        bytes calldata data
+    ) external override returns (bytes32) {
         address lender = msg.sender;
-        (Action action) = abi.decode(data, (Action)); // Use this to unpack arbitrary data
+        Action action = abi.decode(data, (Action)); // Use this to unpack arbitrary data
         flashSender = sender;
         flashToken = token;
         flashValue = value;
@@ -31,7 +41,10 @@ contract TestFlashLender is IERC3156FlashBorrower {
             // Do nothing
         } else if (action == Action.REENTER) {
             bytes memory newData = abi.encode(Action.NORMAL);
-            IWETH10(lender).approve(lender, IWETH10(lender).allowance(address(this), lender) + value * 2);
+            IWETH10(lender).approve(
+                lender,
+                IWETH10(lender).allowance(address(this), lender) + value * 2
+            );
             IWETH10(lender).flashLoan(this, address(lender), value * 2, newData);
         }
         return keccak256("ERC3156FlashBorrower.onFlashLoan");
